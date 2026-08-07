@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+build/
+dist/
+
+# User project data (image references, labels) — not app source
+/projects/*
+!/projects/.gitkeep
+/settings/*
+!/settings/.gitkeep
+
+.vscode/
+.idea/

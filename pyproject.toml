@@ -1,0 +1,40 @@
+[project]
+name = "labelmaker"
+version = "0.1.0"
+description = "Desktop dataset preparation tool for classification, detection, and segmentation"
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.7",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9,<5",  # 5.x dropped readNetFromDarknet/readNetFromCaffe, which auto-label needs
+    "onnxruntime>=1.17",
+]
+
+# Auto-label's .pt/.pth support is opt-in — these are large packages not
+# needed by the rest of the app, so they're not in the base dependency list.
+[project.optional-dependencies]
+torch = ["torch"]  # TorchScript (.pt/.pth) models
+ultralytics = ["ultralytics"]  # raw Ultralytics YOLO (.pt) checkpoints — pulls in torch too
+torchvision = ["torch", "torchvision"]  # reconstructing a Classification state_dict + architecture-name checkpoint
+# GPU (CUDA) auto-labeling on an NVIDIA machine:
+#   - ONNX models: `pip install labelmaker[gpu]` (swaps in onnxruntime-gpu;
+#     uninstall plain `onnxruntime` first, they conflict if both installed).
+#   - PyTorch/Ultralytics/state_dict models: pip's default index normally
+#     serves a CPU-only `torch` wheel, which no extras entry here can
+#     override — install a CUDA build directly instead, e.g.
+#     `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126`
+#     (pick the cuXXX tag matching your installed NVIDIA driver from
+#     https://pytorch.org/get-started/locally/).
+# Either way, GPU is only used when explicitly selected in Auto-Label
+# Settings' Device dropdown — never automatically.
+gpu = ["onnxruntime-gpu"]
+
+[project.scripts]
+labelmaker = "app.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
