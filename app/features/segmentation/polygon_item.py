@@ -73,12 +73,26 @@ class PolygonItem(QGraphicsPolygonItem):
                 path.addEllipse(point, VERTEX_RADIUS + 3, VERTEX_RADIUS + 3)
         return path
 
+    def _display_scale(self) -> float:
+        """The view's current zoom factor, floored at 1.0 — used to shrink
+        (never grow) the label pill and vertex dots so they stay a constant,
+        reasonable size on screen when zoomed in a lot, instead of growing
+        along with the image. Floored rather than fully compensated so
+        zoomed-out behavior (already fine) is untouched, and boundingRect's
+        fixed padding stays a safe upper bound at every zoom level."""
+        scene = self.scene()
+        views = scene.views() if scene is not None else []
+        scale = views[0].transform().m11() if views else 1.0
+        return max(scale, 1.0)
+
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:  # noqa: N802
         polygon = self.polygon()
         selected = self.isSelected()
+        s = self._display_scale()
 
         pen = QPen(self._color)
         pen.setWidth(3 if selected else 2)
+        pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
         painter.setPen(pen)
         fill = QColor(self._color)
         fill.setAlpha(60 if selected else 35)
@@ -89,11 +103,12 @@ class PolygonItem(QGraphicsPolygonItem):
             anchor = polygon.boundingRect().topLeft()
             font = QFont(painter.font())
             font.setBold(True)
-            font.setPointSize(9)
+            font.setPointSizeF(max(0.5, 9.0 / s))
             painter.setFont(font)
             metrics = painter.fontMetrics()
-            label_w = metrics.horizontalAdvance(self.label) + 10
-            label_rect = QRectF(anchor.x(), anchor.y() - 18, label_w, 18)
+            label_h = 18.0 / s
+            label_w = metrics.horizontalAdvance(self.label) + 10.0 / s
+            label_rect = QRectF(anchor.x(), anchor.y() - label_h, label_w, label_h)
             painter.setPen(Qt.NoPen)
             painter.setBrush(self._color)
             painter.drawRect(label_rect)
@@ -101,14 +116,17 @@ class PolygonItem(QGraphicsPolygonItem):
             painter.drawText(label_rect, Qt.AlignCenter, self.label)
 
         if selected:
+            radius = VERTEX_RADIUS / s
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor("#ffffff"))
             for point in polygon:
-                painter.drawEllipse(point, VERTEX_RADIUS, VERTEX_RADIUS)
-            painter.setPen(QPen(self._color, 2))
+                painter.drawEllipse(point, radius, radius)
+            vertex_pen = QPen(self._color, 2)
+            vertex_pen.setCosmetic(True)
+            painter.setPen(vertex_pen)
             painter.setBrush(Qt.NoBrush)
             for point in polygon:
-                painter.drawEllipse(point, VERTEX_RADIUS, VERTEX_RADIUS)
+                painter.drawEllipse(point, radius, radius)
 
     # -- interaction -----------------------------------------------
 

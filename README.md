@@ -11,6 +11,8 @@ Label images for **Classification**, **Detection**, and **Segmentation** — by 
 ![PySide6](https://img.shields.io/badge/UI-PySide6%20(Qt)-41cd52)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey)
 
+**[▶ Watch the 90-second demo](video/LabelMaker.mp4)**
+
 </div>
 
 ---
@@ -22,6 +24,7 @@ Label images for **Classification**, **Detection**, and **Segmentation** — by 
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Importing Images and Video](#importing-images-and-video)
 - [Manual Labeling](#manual-labeling)
 - [Auto-Labeling](#auto-labeling)
 - [Exporting a Dataset](#exporting-a-dataset)
@@ -48,7 +51,9 @@ Your original image files are never touched by labeling itself — everything is
 ## Features
 
 - **Three labeling workflows** — Classification, Detection, and Segmentation, each with a purpose-built canvas and its own keyboard-driven workflow.
+- **Import images, folders, or video** — bring in individual images, a whole folder at once, or a video file; video is automatically split into frames at a sampling rate you choose. See [Importing Images and Video](#importing-images-and-video).
 - **Manual labeling** — click-to-assign for classification, click-and-drag boxes for detection, click-to-trace polygons for segmentation. Edit, reassign, or delete any label at any time.
+- **Import from Previous/Next** — for Detection and Segmentation, copy every box or polygon from the neighboring image in one click instead of redrawing near-identical annotations by hand — especially useful on frames extracted from video.
 - **Auto-labeling** — point the app at a model you've already trained and let it label your images for you, with a confidence threshold and a live progress report.
 - **Broad model format support** — ONNX, Darknet, Caffe, TensorFlow frozen graphs, PyTorch TorchScript, and raw Ultralytics YOLO checkpoints (detect, classify, *and* segment) — see [Auto-Labeling](#auto-labeling) below.
 - **GPU acceleration** — auto-labeling runs on your NVIDIA GPU when available (CUDA, via onnxruntime-gpu or PyTorch), with automatic CPU fallback and live GPU status in the settings dialog.
@@ -96,6 +101,8 @@ Your original image files are never touched by labeling itself — everything is
 
 | | |
 |---|---|
+| ![Import from Previous/Next in Detection](screenshots/Import%20from%20Previous%20or%20Next.png) | |
+| *"Import from Previous/Next" copies every box from the neighboring image — a big time-saver on frames extracted from video. Segmentation has the same buttons for polygons.* | |
 | ![Detection workspace after auto-labeling](screenshots/Detection%20dataset%20after%20Auto-Labeling.png) | ![Auto-Label Settings for Detection](screenshots/Auto-Label%20Settings%20-%20Detection.png) |
 | *Bounding boxes drawn automatically across a batch of images* | *Model, device (CPU/GPU), and confidence threshold* |
 | ![Auto-labeling progress for Detection](screenshots/Auto-Label%20Report%20-%20Detection.png) | ![Export Detection dataset dialog](screenshots/Export%20detection%20dataset.png) |
@@ -160,6 +167,20 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 Everything autosaves as you go; there's no separate Save step.
 
+## Importing Images and Video
+
+Every workspace has the same import row at the top: **Import Folder**, **Import Image**, **Import Video…**, and **Import Classes**.
+
+**Import Video…** opens a dedicated dialog:
+
+<p align="center"><img src="screenshots/Import%20Video.png" alt="Import Video dialog" width="640"></p>
+
+1. **Browse…** to a video file (`.mp4`, `.avi`, `.mov`, `.mkv`, `.webm`, and other common formats). LabelMaker reads back its resolution, duration, and source frame rate.
+2. Set a **Frame rate** — how many frames per second of the video to keep. The dialog shows a live estimate of how many frames that will produce.
+3. Click **Upload**. Frames are extracted in the background, with a progress bar and a Cancel button, and added straight to your project as ordinary images — ready to label like anything else.
+
+Because consecutive video frames usually look almost the same, that's exactly what makes **Import from Previous/Next** (see [Manual Labeling](#manual-labeling) below) so useful right after a video import.
+
 ## Manual Labeling
 
 <details>
@@ -180,6 +201,7 @@ Everything autosaves as you go; there's no separate Save step.
 2. Click and drag on the image to draw a box around an object.
 3. Click an existing box to select it: drag its body to move it, drag a corner/edge to resize, press **Delete** to remove it.
 4. The **Objects in this image** panel lists every box on the current image — use it to select, reassign, or delete without touching the canvas.
+5. Labeling frames extracted from video? Click **Import from Previous** (or **Import from Next**) to copy every box from the neighboring image instead of redrawing it — if the current image already has boxes, you'll be asked before they're replaced.
 
 </details>
 
@@ -190,6 +212,7 @@ Everything autosaves as you go; there's no separate Save step.
 2. Close the shape by clicking back on the first point (it turns green once you're close), pressing **Enter**, or double-clicking. You need at least 3 points.
 3. Click a shape to select it: drag its body to move it, drag a point to reshape it, double-click a point to delete just that point.
 4. Just like Detection, the **Objects in this image** panel lets you select, reassign, or delete any shape.
+5. Labeling frames extracted from video? Click **Import from Previous** (or **Import from Next**) to copy every shape from the neighboring image instead of retracing it — if the current image already has shapes, you'll be asked before they're replaced.
 
 </details>
 

@@ -111,3 +111,16 @@ class ImageGridWidget(QListView):
     def current_image_id(self) -> str | None:
         index = self.currentIndex()
         return index.data(ImageIdRole) if index.isValid() else None
+
+    def neighbor_image_id(self, delta: int) -> str | None:
+        """The image id ± delta rows away from the current row, in the same
+        (filtered) display order _step_current walks — or None past either
+        end."""
+        model = self.model()
+        current = self.currentIndex()
+        if model is None or not current.isValid():
+            return None
+        row = current.row() + delta
+        if 0 <= row < model.rowCount():
+            return model.index(row, 0).data(ImageIdRole)
+        return None

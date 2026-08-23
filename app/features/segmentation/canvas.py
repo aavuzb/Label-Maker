@@ -216,6 +216,7 @@ class SegmentationCanvas(ZoomableGraphicsView):
         pen = QPen(QColor(_DRAW_PEN_COLOR))
         pen.setStyle(Qt.DashLine)
         pen.setWidth(2)
+        pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
         self._preview_item = self._scene.addPolygon(QPolygonF(points), pen)
 
         near_close = False
@@ -230,6 +231,7 @@ class SegmentationCanvas(ZoomableGraphicsView):
             fill = QColor(_CLOSE_HIGHLIGHT_COLOR) if highlight else QColor("#ffffff")
             marker_pen = QPen(outline)
             marker_pen.setWidth(2 if highlight else 1)
+            marker_pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
             marker = self._scene.addEllipse(
                 point.x() - radius, point.y() - radius, radius * 2, radius * 2, marker_pen, fill
             )
@@ -286,6 +288,7 @@ class SegmentationCanvas(ZoomableGraphicsView):
         pen = QPen(QColor(_DRAW_PEN_COLOR))
         pen.setStyle(Qt.DashLine)
         pen.setWidth(2)
+        pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
         self._preview_item = self._scene.addPolygon(QPolygonF(points), pen)
 
         self.status_changed.emit("Pick a class for this shape…")

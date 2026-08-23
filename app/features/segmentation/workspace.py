@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QSplitter, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QMessageBox, QPushButton, QSplitter, QVBoxLayout, QWidget
 
 from app.features.project.manager import ProjectController
 from app.features.segmentation.canvas import SegmentationCanvas
@@ -185,6 +185,7 @@ class SegmentationWorkspace(QWidget):
         layout.setSpacing(8)
         layout.addWidget(panel_header("CANVAS", accent=_ACCENT))
         layout.addWidget(build_callout(_INSTRUCTIONS, _ACCENT))
+        layout.addLayout(self._build_export_neighbor_row())
         layout.addWidget(self.canvas, stretch=1)
         self.status_label = status_pill(_ACCENT)
         layout.addWidget(self.status_label)
@@ -192,6 +193,23 @@ class SegmentationWorkspace(QWidget):
         self.canvas.status_changed.connect(self.status_label.setText)
         self.canvas.refresh_status()
         return card
+
+    def _build_export_neighbor_row(self) -> QHBoxLayout:
+        self.export_previous_button = QPushButton("Import from Previous")
+        self.export_previous_button.setStyleSheet(outline_button_style(_ACCENT))
+        self.export_previous_button.setToolTip("Copy the previous image's shapes and classes onto this image")
+        self.export_previous_button.clicked.connect(lambda: self._export_from_neighbor(-1))
+        self.export_next_button = QPushButton("Import from Next")
+        self.export_next_button.setStyleSheet(outline_button_style(_ACCENT))
+        self.export_next_button.setToolTip("Copy the next image's shapes and classes onto this image")
+        self.export_next_button.clicked.connect(lambda: self._export_from_neighbor(1))
+
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        row.addWidget(self.export_previous_button)
+        row.addWidget(self.export_next_button)
+        row.addStretch()
+        return row
 
     # -- wiring -----------------------------------------------
 
@@ -259,3 +277,36 @@ class SegmentationWorkspace(QWidget):
     def _on_classes_changed(self) -> None:
         self.canvas.refresh_class_styles()
         self.canvas.load_image(self._current_image_id)
+
+    def _export_from_neighbor(self, delta: int) -> None:
+        if self._current_image_id is None:
+            self.status_label.setText("Select an image first.")
+            return
+        neighbor_id = self.grid.neighbor_image_id(delta)
+        direction = "previous" if delta < 0 else "next"
+        if neighbor_id is None:
+            self.status_label.setText(f"There's no {direction} image.")
+            return
+
+        project = self._controller.project
+        neighbor = project.find_image(neighbor_id)
+        current = project.find_image(self._current_image_id)
+        if neighbor is None or not neighbor.annotations:
+            self.status_label.setText(f"The {direction} image has no shapes to copy.")
+            return
+
+        if current is not None and current.annotations:
+            reply = QMessageBox.question(
+                self,
+                f"Import from {direction.capitalize()}",
+                f"This image already has {len(current.annotations)} shape(s). Replace them with the "
+                f"{len(neighbor.annotations)} shape(s) from the {direction} image?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return
+
+        count = self._controller.copy_annotations(neighbor_id, self._current_image_id)
+        self.canvas.load_image(self._current_image_id)
+        self.status_label.setText(f"Copied {count} shape(s) from the {direction} image.")

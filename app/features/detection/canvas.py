@@ -142,6 +142,7 @@ class DetectionCanvas(ZoomableGraphicsView):
                 pen = QPen(QColor(_DRAW_PEN_COLOR))
                 pen.setStyle(Qt.DashLine)
                 pen.setWidth(2)
+                pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
                 self._draw_item = self._scene.addRect(QRectF(scene_pos, scene_pos), pen)
                 self.status_changed.emit("Drawing… release the mouse to finish the box.")
                 event.accept()

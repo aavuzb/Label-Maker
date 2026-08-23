@@ -174,6 +174,20 @@ class ProjectController(QObject):
             self.save()
             self._notify_image_updated(image_id)
 
+    def copy_annotations(self, source_image_id: str, target_image_id: str) -> int:
+        """Replaces target's annotations with fresh copies of source's (new ids,
+        same class + points) — used by "Export Previous/Next" to reuse a
+        neighboring image's labels instead of redrawing them from scratch."""
+        project = self._require_project()
+        source = project.find_image(source_image_id)
+        target = project.find_image(target_image_id)
+        if source is None or target is None:
+            return 0
+        target.annotations = [Annotation(class_id=a.class_id, points=list(a.points)) for a in source.annotations]
+        self.save()
+        self._notify_image_updated(target_image_id)
+        return len(target.annotations)
+
     def assign_images(self, image_ids: list[str], class_id: str, mode: str) -> list[tuple[str, str]]:
         """Copies or moves each image's file into the class's folder and tags it.
 

@@ -89,12 +89,26 @@ class BoxItem(QGraphicsRectItem):
                 path.addRect(handle_rect.adjusted(-3, -3, 3, 3))
         return path
 
+    def _display_scale(self) -> float:
+        """The view's current zoom factor, floored at 1.0 — used to shrink
+        (never grow) the label pill and selection handles so they stay a
+        constant, reasonable size on screen when zoomed in a lot, instead of
+        growing along with the image. Floored rather than fully compensated
+        so zoomed-out behavior (already fine) is untouched, and boundingRect's
+        fixed padding stays a safe upper bound at every zoom level."""
+        scene = self.scene()
+        views = scene.views() if scene is not None else []
+        scale = views[0].transform().m11() if views else 1.0
+        return max(scale, 1.0)
+
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:  # noqa: N802
         rect = self.rect()
         selected = self.isSelected()
+        s = self._display_scale()
 
         pen = QPen(self._color)
         pen.setWidth(3 if selected else 2)
+        pen.setCosmetic(True)  # constant width in screen pixels, regardless of zoom
         painter.setPen(pen)
         fill = QColor(self._color)
         fill.setAlpha(50 if selected else 30)
@@ -103,11 +117,12 @@ class BoxItem(QGraphicsRectItem):
 
         font = QFont(painter.font())
         font.setBold(True)
-        font.setPointSize(9)
+        font.setPointSizeF(max(0.5, 9.0 / s))
         painter.setFont(font)
         metrics = painter.fontMetrics()
-        label_w = metrics.horizontalAdvance(self.label) + 10
-        label_rect = QRectF(rect.left(), rect.top() - 18, label_w, 18)
+        label_h = 18.0 / s
+        label_w = metrics.horizontalAdvance(self.label) + 10.0 / s
+        label_rect = QRectF(rect.left(), rect.top() - label_h, label_w, label_h)
         painter.setPen(Qt.NoPen)
         painter.setBrush(self._color)
         painter.drawRect(label_rect)
@@ -117,12 +132,12 @@ class BoxItem(QGraphicsRectItem):
         if selected:
             painter.setPen(Qt.NoPen)
             painter.setBrush(self._color)
-            for handle_rect in self._handle_rects().values():
+            for handle_rect in self._handle_rects(HANDLE_SIZE / s).values():
                 painter.drawRect(handle_rect)
 
-    def _handle_rects(self) -> dict[str, QRectF]:
+    def _handle_rects(self, size: float = HANDLE_SIZE) -> dict[str, QRectF]:
         r = self.rect()
-        h = HANDLE_SIZE
+        h = size
         points = {
             "tl": r.topLeft(),
             "t": QRectF(r.left(), r.top(), r.width(), 0).center(),
